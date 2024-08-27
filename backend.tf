@@ -1,9 +1,9 @@
 terraform {
   backend "s3" {
-    bucket         = local.bucket_name
+    bucket         = "terraform-github-gitlab-action-tf-state-backend"
     key            = "tf-infra/terraform.tfstate"
-    region         = local.region
-    dynamodb_table = local.dynamodb_table_name
+    region         = "ap-south-1"
+    dynamodb_table = "terraform-state-locking-table"
     encrypt        = true
   }
 }
