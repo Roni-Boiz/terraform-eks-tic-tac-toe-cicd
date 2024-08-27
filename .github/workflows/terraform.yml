@@ -2,7 +2,7 @@ name: Terraform
 
 on:
   workflow_run:
-    workflows: ["Script"]
+    workflows: [Script]
     types:
       - completed
     status: success
