@@ -34,3 +34,12 @@ jobs:
       - name: Terraform Apply
         id: apply
         run: terraform apply -auto-approve
+
+      - name: Create Backend
+        run: mv backend.txt backend.tf
+
+      - name: Initialize Backend
+        run: terraform init
+
+      - name: Initialize Backend
+        run: terraform init -migrate-state
