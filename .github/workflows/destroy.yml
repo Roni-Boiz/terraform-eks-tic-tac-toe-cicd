@@ -5,7 +5,7 @@ on:
 
 jobs:
   build-analyze-scan:
-    name: Build
+    name: Destroy
     runs-on: [self-hosted, git-workflow]
     steps:
       - name: Checkout code
@@ -13,7 +13,7 @@ jobs:
         with:
           fetch-depth: 0
   
-      - name: Deploy to container
+      - name: Destroy Containers
         run: | 
           docker stop game
           docker rm game
@@ -21,7 +21,7 @@ jobs:
       - name: Update kubeconfig
         run: aws eks --region ap-south-1 update-kubeconfig --name EKS_CLOUD
 
-      - name: Deploy to kubernetes
+      - name: Destroy Kubernetes Deployments
         run: kubectl delete -f manifests/deployment-service.yml
   
       - name: Send a Slack Notification
@@ -33,3 +33,6 @@ jobs:
           channel: '#githubactions-eks'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Destroy Resources
+        run: terraform destroy --auto-approve
