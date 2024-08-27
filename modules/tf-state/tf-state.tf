@@ -1,30 +1,43 @@
-# S3 Bucket for TF State File
-resource "aws_s3_bucket" "terraform_state" {
-  bucket        = var.bucket_name
+# Create S3 Bucket
+resource "aws_s3_bucket" "tf-state-bucket" {
+  bucket = var.bucket_name
   force_destroy = true
 }
 
-resource "aws_s3_bucket_versioning" "terraform_bucket_versioning" {
-  bucket = aws_s3_bucket.terraform_state.id
+resource "aws_s3_bucket_acl" "example" {
+  bucket = aws_s3_bucket.tf-state-bucket.id
+  acl    = "private"
+}
+
+resource "aws_s3_bucket_versioning" "versioning_example" {
+  bucket = aws_s3_bucket.tf-state-bucket.id
   versioning_configuration {
     status = "Enabled"
   }
 }
 
-resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state_crypto_conf" {
-  bucket = aws_s3_bucket.terraform_state.bucket
+resource "aws_kms_key" "tf-state-key" {
+  description             = "This key is used to encrypt bucket objects"
+  deletion_window_in_days = 10
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "example" {
+  bucket = aws_s3_bucket.tf-state-bucket.id
+
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
+      kms_master_key_id = aws_kms_key.tf-state-key.arn
+      sse_algorithm     = "aws:kms"
     }
   }
 }
 
-# Dynamo DB Table for Locking TF Config
-resource "aws_dynamodb_table" "terraform_locks" {
-  name         = "terraform-state-locking"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "LockID"
+# Create DynamoDB Table
+resource "aws_dynamodb_table" "basic-dynamodb-table" {
+  name           = var.dynamodb_table_name
+  billing_mode   = "PAY_PER_REQUEST"
+  hash_key       = "LockID"
+
   attribute {
     name = "LockID"
     type = "S"
