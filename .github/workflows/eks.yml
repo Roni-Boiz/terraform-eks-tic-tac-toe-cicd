@@ -1,0 +1,101 @@
+name: CI/CD Pipeline
+
+on:
+  workflow_run:
+    workflows: ["Terraform"]
+    types:
+      - completed
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Test
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install Dependencies
+        run: npm install -g serve
+
+      - name: Build Application
+        run: npm run build
+
+      - name: Start Application
+        run: serve -s build > /dev/null 2>&1 &
+          
+  build:
+    name: Build
+    needs: Test
+    runs-on: [self-hosted, git-workflow]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Build and analyze with SonarQube
+        uses: sonarsource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+      - name: Trivy file scan
+        run: trivy fs . > trivyfs.txt
+
+      - name: Docker Build and Push
+        run: |
+          docker build -t tic-tac-toe .
+          docker tag tic-tac-toe don361/tic-tac-toe:latest
+          docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+          docker push don361/tic-tac-toe:latest
+        env:
+          DOCKER_CLI_ACI: 1
+
+      - name: Image scan
+        run: trivy image don361/tic-tac-toe:latest > trivyimage.txt
+
+  deploy:
+    name: Deploy
+    needs: Build 
+    runs-on: [self-hosted, git-workflow]
+    steps:
+      - name: docker pull image
+        run: docker pull don361/tic-tac-toe:latest
+
+      - name: Image scan
+        run: trivy image don361/tic-tac-toe:latest > trivyimagedeploy.txt  
+
+      - name: Stop and Remove Old Container
+        run: |
+          docker stop game || true
+          docker rm -f game || true
+
+      - name: Deploy to container
+        run: docker run -d --name game -p 3000:3000 don361/tic-tac-toe:latest
+
+      - name: Prune Unused Docker Images
+        run: docker image prune -a -f
+
+      - name: Update kubeconfig
+        run: aws eks --region ap-south-1 update-kubeconfig --name EKS_CLOUD
+
+      - name: Deploy to kubernetes
+        run: kubectl apply -f manifests/deployment-service.yml
+  
+      - name: Send a Slack Notification
+        if: always()
+        uses: act10ns/slack@v1
+        with:
+          status: ${{ job.status }}
+          steps: ${{ toJson(steps) }}
+          channel: '#githubactions-eks'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  
+
+        
