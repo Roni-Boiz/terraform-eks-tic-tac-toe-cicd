@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: src
+        working-directory: app
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -23,13 +23,22 @@ jobs:
           node-version: '16'
 
       - name: Install Dependencies
-        run: npm install -g serve
+        run: npm install
+
+      - name: Install Serve Locally
+        run: npm install serve
 
       - name: Build Application
         run: npm run build
 
       - name: Start Application
-        run: serve -s build > /dev/null 2>&1 &
+        run: npx serve build &
+      
+      - name: Wait for Application to Start
+        run: sleep 10
+
+      - name: Run Tests
+        run: curl --fail http://localhost:3000 || exit 1
           
   build:
     name: Build
