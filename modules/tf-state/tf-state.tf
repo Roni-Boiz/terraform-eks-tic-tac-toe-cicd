@@ -4,9 +4,17 @@ resource "aws_s3_bucket" "tf-state-bucket" {
   force_destroy = true
 }
 
-resource "aws_s3_bucket_acl" "example" {
+resource "aws_s3_bucket_acl" "tf-state-bucket-acl" {
   bucket = aws_s3_bucket.tf-state-bucket.id
+  depends_on = [aws_s3_bucket_ownership_controls.tf-state-bucket-ownership]
   acl    = "private"
+}
+
+resource "aws_s3_bucket_ownership_controls" "tf-state-bucket-ownership" {
+  bucket = aws_s3_bucket.tf-state-bucket.id
+  rule {
+    object_ownership = "ObjectWriter"
+  }
 }
 
 resource "aws_s3_bucket_versioning" "versioning_example" {
