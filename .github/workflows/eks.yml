@@ -5,6 +5,7 @@ on:
     workflows: ["Terraform"]
     types:
       - completed
+    status: success
 
 jobs:
   test:

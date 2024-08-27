@@ -5,12 +5,16 @@ on:
     workflows: ["Script"]
     types:
       - completed
+    status: success
 
 jobs:
   setup:
     name: "Terraform"
     runs-on: [self-hosted, git-workflow]
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
       - name: Terraform Format
         id: fmt
         run: terraform fmt -check
