@@ -22,10 +22,10 @@ jobs:
         run: aws eks --region ap-south-1 update-kubeconfig --name EKS_CLOUD
 
       - name: Destroy Kubernetes Deployments
-        run: kubectl delete -f manifests/deployment-service.yml
+        run: kubectl delete -f manifests/deployment-service.yml || true
 
       - name: Update Backend States
-        run: terraform init -reconfigure
+        run: terraform init
 
       - name: Destroy Resources
         run: terraform destroy --auto-approve
