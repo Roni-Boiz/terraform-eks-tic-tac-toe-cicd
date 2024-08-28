@@ -2,18 +2,23 @@ name: Terraform
 
 on:
   workflow_run:
-    workflows: [Script]
+    workflows: ["Script"]
     types:
       - completed
     status: success
 
 jobs:
   setup:
-    name: "Terraform"
+    name: Setup
     runs-on: [self-hosted, git-workflow]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+
+      - name: Check and Create S3 and DynamoDB Resources
+        run: |
+          sudo chmod +x ./aws-prerequisite-resources.sh
+          ./aws-prerequisite-resources.sh
 
       - name: Terraform Format
         id: fmt
@@ -35,11 +40,19 @@ jobs:
         id: apply
         run: terraform apply -auto-approve
 
-      - name: Create Backend
-        run: mv backend.txt backend.tf
+  cleanup:
+    name: Cleanup
+    runs-on: [self-hosted, git-workflow]
+    needs: Setup
+    if: failure()
+    steps:
+      - name: Destroy Terraform Resources
+        run: terraform destroy -auto-approve
 
-      - name: Initialize Backend
-        run: terraform init
+      - name: Delete DynamoDB Table
+        run: |
+          aws dynamodb delete-table --table-name "terraform-state-locking-table" --region ap-south-1
 
-      - name: Initialize Backend
-        run: terraform init -migrate-state
+      - name: Delete S3 Bucket
+        run: |
+          aws s3api delete-bucket --bucket your-terraform-state-bucket --region ap-south-1
