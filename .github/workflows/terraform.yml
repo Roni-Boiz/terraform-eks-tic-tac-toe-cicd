@@ -13,7 +13,7 @@ jobs:
     runs-on: [self-hosted, git-workflow]
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
@@ -53,8 +53,8 @@ jobs:
 
       - name: Delete DynamoDB Table
         run: |
-          aws dynamodb delete-table --table-name "terraform-state-locking-table" --region ap-south-1 || true
+          aws dynamodb delete-table --table-name terraform-state-locking-table --region ap-south-1 || true
 
       - name: Delete S3 Bucket
         run: |
-          aws s3api delete-bucket --bucket your-terraform-state-bucket --region ap-south-1 || true
+          aws s3api delete-bucket --bucket terraform-github-gitlab-tf-state-backend  --region ap-south-1 || true
