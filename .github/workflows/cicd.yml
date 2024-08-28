@@ -119,7 +119,7 @@ jobs:
         run: docker image prune -a -f
 
       - name: Update kubeconfig
-        id: update k8s current context
+        id: update-k8s-current-context
         run: aws eks --region ap-south-1 update-kubeconfig --name EKS_CLOUD
 
       - name: Deploy to kubernetes
