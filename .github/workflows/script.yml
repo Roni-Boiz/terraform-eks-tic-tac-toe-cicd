@@ -14,7 +14,8 @@ jobs:
     runs-on: [self-hosted, git-workflow]
     defaults:
       run:
-        working-directory: $HOME
+        shell: bash
+        working-directory: ${{ env.HOME }}
     steps:
       - name: Check if Docker is already installed
         id: check-docker
@@ -61,7 +62,8 @@ jobs:
     runs-on: [self-hosted, git-workflow]
     defaults:
       run:
-        working-directory: $HOME
+        shell: bash
+        working-directory: ${{ env.HOME }}
     steps:
       - name: Check if Java is already installed
         id: check-java
@@ -98,7 +100,8 @@ jobs:
     runs-on: [self-hosted, git-workflow]
     defaults:
       run:
-        working-directory: $HOME
+        shell: bash
+        working-directory: ${{ env.HOME }}
     steps:
       - name: Check if Trivy is already installed
         id: check-trivy
@@ -134,7 +137,8 @@ jobs:
     runs-on: [self-hosted, git-workflow]
     defaults:
       run:
-        working-directory: $HOME
+        shell: bash
+        working-directory: ${{ env.HOME }}
     steps:
       - name: Check if Terraform is already installed
         id: check-terraform
@@ -171,7 +175,8 @@ jobs:
     runs-on: [self-hosted, git-workflow]
     defaults:
       run:
-        working-directory: $HOME
+        shell: bash
+        working-directory: ${{ env.HOME }}
     steps:
       - name: Check if Kubectl is already installed
         id: check-kubectl
@@ -208,7 +213,8 @@ jobs:
     runs-on: [self-hosted, git-workflow]
     defaults:
       run:
-        working-directory: $HOME
+        shell: bash
+        working-directory: ${{ env.HOME }}
     steps:
       - name: Check if AWS-CLI is already installed
         id: check-aws-cli
