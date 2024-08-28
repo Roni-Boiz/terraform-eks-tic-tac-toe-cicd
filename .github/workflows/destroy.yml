@@ -14,6 +14,7 @@ jobs:
           fetch-depth: 0
   
       - name: Destroy Containers
+        id: remove containers
         run: | 
           docker stop game || true
           docker rm game || true
@@ -22,19 +23,23 @@ jobs:
         run: aws eks --region ap-south-1 update-kubeconfig --name EKS_CLOUD
 
       - name: Destroy Kubernetes Deployments
+        id: delete from k8s
         run: kubectl delete -f manifests/deployment-service.yml || true
 
       - name: Update Backend States
         run: terraform init
 
       - name: Destroy Resources
+        id: destroy resources
         run: terraform destroy --auto-approve
 
       - name: Delete DynamoDB Table
+        id: delete dynamodb table
         run: |
           aws dynamodb delete-table --table-name terraform-state-locking-table --region ap-south-1
 
       - name: Delete S3 Bucket
+        id: delete s3 bucket
         run: |
           aws s3api list-objects --bucket terraform-github-gitlab-tf-state-backend --region ap-south-1 --query 'Contents[].{Key: Key}' --output text | while read -r key; do
             aws s3api delete-object --bucket terraform-github-gitlab-tf-state-backend --key "$key" --region ap-south-1

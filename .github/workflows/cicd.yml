@@ -52,35 +52,57 @@ jobs:
           fetch-depth: 0
 
       - name: Build and analyze with SonarQube
+        id: SonarQube Analyze
         uses: sonarsource/sonarqube-scan-action@master
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
       - name: Trivy file scan
+        id: trivy file scan
         run: trivy fs . > trivyfs.txt
 
-      - name: Docker Build and Push
+      - name: Docker Build
+        id: docker build
         run: |
           docker build -t tic-tac-toe .
           docker tag tic-tac-toe don361/tic-tac-toe:latest
+        env:
+          DOCKER_CLI_ACI: 1
+
+      - name: Docker Push
+        id: docker push
+        run: |
           docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
           docker push don361/tic-tac-toe:latest
         env:
           DOCKER_CLI_ACI: 1
 
       - name: Image scan
+        id: trivy image scan
         run: trivy image don361/tic-tac-toe:latest > trivyimage.txt
+      
+      - name: Send a Slack Notification
+        if: always()
+        uses: act10ns/slack@v1
+        with:
+          status: ${{ job.status }}
+          steps: ${{ toJson(steps) }}
+          channel: '#github-actions'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   deploy:
     name: Deploy
     needs: Build 
     runs-on: [self-hosted, git-workflow]
     steps:
-      - name: docker pull image
+      - name: Docker Pull
+        id: docker pull
         run: docker pull don361/tic-tac-toe:latest
 
       - name: Image scan
+        id: trivy image scan
         run: trivy image don361/tic-tac-toe:latest > trivyimagedeploy.txt  
 
       - name: Stop and Remove Old Container
@@ -89,15 +111,19 @@ jobs:
           docker rm -f game || true
 
       - name: Deploy to container
+        id: docker deploy
         run: docker run -d --name game -p 3000:3000 don361/tic-tac-toe:latest
 
       - name: Prune Unused Docker Images
+        id: docker prune
         run: docker image prune -a -f
 
       - name: Update kubeconfig
+        id: update k8s current context
         run: aws eks --region ap-south-1 update-kubeconfig --name EKS_CLOUD
 
       - name: Deploy to kubernetes
+        id: deploy to k8s
         run: kubectl apply -f manifests/deployment-service.yml
   
       - name: Send a Slack Notification
