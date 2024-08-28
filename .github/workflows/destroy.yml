@@ -8,21 +8,40 @@ jobs:
     name: Destroy
     runs-on: [self-hosted, git-workflow]
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - name: Checkout Code
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
   
       - name: Destroy Containers
         run: | 
-          docker stop game
-          docker rm game
+          docker stop game || true
+          docker rm game || true
         
-      - name: Update kubeconfig
+      - name: Update Kubeconfig
         run: aws eks --region ap-south-1 update-kubeconfig --name EKS_CLOUD
 
       - name: Destroy Kubernetes Deployments
-        run: kubectl delete -f manifests/deployment-service.yml
+        run: kubectl delete -f manifests/deployment-service.yml || true
+
+      - name: Destroy Resources
+        run: terraform destroy --auto-approve || true
+
+      - name: Delete DynamoDB Table
+        run: |
+          aws dynamodb delete-table --table-name terraform-state-locking-table --region ap-south-1 || true
+
+      - name: Delete S3 Bucket
+        run: |
+          aws s3api list-objects --bucket terraform-github-gitlab-tf-state-backend --region ap-south-1 --query 'Contents[].{Key: Key}' --output text | while read -r key; do
+            aws s3api delete-object --bucket terraform-github-gitlab-tf-state-backend --key "$key" --region ap-south-1 || true
+          done
+
+          aws s3api list-object-versions --bucket terraform-github-gitlab-tf-state-backend --region ap-south-1 --query 'Versions[].{Key: Key, VersionId: VersionId}' --output text | while read -r key version_id; do
+            aws s3api delete-object --bucket terraform-github-gitlab-tf-state-backend --key "$key" --version-id "$version_id" --region ap-south-1 || true
+          done
+
+          aws s3api delete-bucket --bucket terraform-github-gitlab-tf-state-backend --region ap-south-1 || true
   
       - name: Send a Slack Notification
         if: always()
@@ -33,6 +52,3 @@ jobs:
           channel: '#githubactions-eks'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
-      - name: Destroy Resources
-        run: terraform destroy --auto-approve
