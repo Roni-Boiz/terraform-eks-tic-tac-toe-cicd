@@ -53,8 +53,12 @@ jobs:
 
       - name: Delete DynamoDB Table
         run: |
-          aws dynamodb delete-table --table-name terraform-state-locking-table --region ap-south-1 || true
+          if aws dynamodb describe-table --table-name terraform-state-locking-table --region "$REGION" &>/dev/null; then
+            aws dynamodb delete-table --table-name terraform-state-locking-table --region ap-south-1 || true
+          fi
 
       - name: Delete S3 Bucket
         run: |
-          aws s3api delete-bucket --bucket terraform-github-gitlab-tf-state-backend  --region ap-south-1 || true
+          if aws s3api head-bucket --bucket terraform-github-gitlab-tf-state-backend &>/dev/null; then
+            aws s3api delete-bucket --bucket terraform-github-gitlab-tf-state-backend --region ap-south-1 || true
+          fi
