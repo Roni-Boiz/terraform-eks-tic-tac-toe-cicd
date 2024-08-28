@@ -52,23 +52,23 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
-  cleanup:
-    name: Cleanup
-    runs-on: [self-hosted, git-workflow]
-    needs: Setup
-    if: failure()
-    steps:
-      - name: Destroy Terraform Resources
-        run: terraform destroy -auto-approve || true
+  # cleanup:
+  #   name: Cleanup
+  #   runs-on: [self-hosted, git-workflow]
+  #   needs: Setup
+  #   if: failure()
+  #   steps:
+  #     - name: Destroy Terraform Resources
+  #       run: terraform destroy -auto-approve || true
 
-      - name: Delete DynamoDB Table
-        run: |
-          if aws dynamodb describe-table --table-name terraform-state-locking-table --region "$REGION" &>/dev/null; then
-            aws dynamodb delete-table --table-name terraform-state-locking-table --region ap-south-1 || true
-          fi
+  #     - name: Delete DynamoDB Table
+  #       run: |
+  #         if aws dynamodb describe-table --table-name terraform-state-locking-table --region "$REGION" &>/dev/null; then
+  #           aws dynamodb delete-table --table-name terraform-state-locking-table --region ap-south-1 || true
+  #         fi
 
-      - name: Delete S3 Bucket
-        run: |
-          if aws s3api head-bucket --bucket terraform-github-gitlab-tf-state-backend &>/dev/null; then
-            aws s3api delete-bucket --bucket terraform-github-gitlab-tf-state-backend --region ap-south-1 || true
-          fi
+  #     - name: Delete S3 Bucket
+  #       run: |
+  #         if aws s3api head-bucket --bucket terraform-github-gitlab-tf-state-backend &>/dev/null; then
+  #           aws s3api delete-bucket --bucket terraform-github-gitlab-tf-state-backend --region ap-south-1 || true
+  #         fi

@@ -47,6 +47,7 @@ jobs:
     runs-on: [self-hosted, git-workflow]
     steps:
       - name: Checkout code
+        id: checkout-code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -135,6 +136,3 @@ jobs:
           channel: '#github-actions'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-  
-
-        
