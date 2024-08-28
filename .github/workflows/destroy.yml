@@ -22,26 +22,29 @@ jobs:
         run: aws eks --region ap-south-1 update-kubeconfig --name EKS_CLOUD
 
       - name: Destroy Kubernetes Deployments
-        run: kubectl delete -f manifests/deployment-service.yml || true
+        run: kubectl delete -f manifests/deployment-service.yml
+
+      - name: Update Backend States
+        run: terraform init -reconfigure
 
       - name: Destroy Resources
-        run: terraform destroy --auto-approve || true
+        run: terraform destroy --auto-approve
 
       - name: Delete DynamoDB Table
         run: |
-          aws dynamodb delete-table --table-name terraform-state-locking-table --region ap-south-1 || true
+          aws dynamodb delete-table --table-name terraform-state-locking-table --region ap-south-1
 
       - name: Delete S3 Bucket
         run: |
           aws s3api list-objects --bucket terraform-github-gitlab-tf-state-backend --region ap-south-1 --query 'Contents[].{Key: Key}' --output text | while read -r key; do
-            aws s3api delete-object --bucket terraform-github-gitlab-tf-state-backend --key "$key" --region ap-south-1 || true
+            aws s3api delete-object --bucket terraform-github-gitlab-tf-state-backend --key "$key" --region ap-south-1
           done
 
           aws s3api list-object-versions --bucket terraform-github-gitlab-tf-state-backend --region ap-south-1 --query 'Versions[].{Key: Key, VersionId: VersionId}' --output text | while read -r key version_id; do
-            aws s3api delete-object --bucket terraform-github-gitlab-tf-state-backend --key "$key" --version-id "$version_id" --region ap-south-1 || true
+            aws s3api delete-object --bucket terraform-github-gitlab-tf-state-backend --key "$key" --version-id "$version_id" --region ap-south-1
           done
 
-          aws s3api delete-bucket --bucket terraform-github-gitlab-tf-state-backend --region ap-south-1 || true
+          aws s3api delete-bucket --bucket terraform-github-gitlab-tf-state-backend --region ap-south-1
   
       - name: Send a Slack Notification
         if: always()
